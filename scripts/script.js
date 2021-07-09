@@ -1,9 +1,11 @@
 // location
 
 const headerCityButton = document.querySelector('.header__city-button');
-
+const categoryTitle = document.querySelector('.goods__title');
 //hash (category)
 let hash = location.hash.substring(1);
+
+categoryTitle.textContent = document.querySelector(`a[href*="#${hash}"]`).textContent;
 
 headerCityButton.textContent = localStorage.getItem('lomoda-location') || 'Ваш город?';
 
@@ -164,8 +166,6 @@ try {
     
     
     window.addEventListener('hashchange', () => {
-        
-        const categoryTitle = document.querySelector('.goods__title');
 
         hash = location.hash.substring(1);
 
