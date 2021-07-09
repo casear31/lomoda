@@ -2,10 +2,19 @@
 
 const headerCityButton = document.querySelector('.header__city-button');
 const categoryTitle = document.querySelector('.goods__title');
+const cartListGoods = document.querySelector('.cart__list-goods');
+const cartTotalCost = document.querySelector('.cart__total-cost');
+const subheaderCart = document.querySelector('.subheader__cart'),
+    cartOverlay = document.querySelector('.cart-overlay');
+
+
 //hash (category)
 let hash = location.hash.substring(1);
 
-categoryTitle.textContent = document.querySelector(`a[href*="#${hash}"]`).textContent;
+if (categoryTitle) {
+    categoryTitle.textContent = document.querySelector(`a[href*="#${hash}"]`).textContent;
+}
+
 
 headerCityButton.textContent = localStorage.getItem('lomoda-location') || 'Ваш город?';
 
@@ -14,6 +23,54 @@ headerCityButton.addEventListener('click', () => {
     headerCityButton.textContent = city;
     localStorage.setItem('lomoda-location', city);
 })
+
+const getLocalStorage = () => JSON?.parse(localStorage.getItem('cart-lomoda')) || [];
+const setLocalStorage = data => localStorage.setItem('cart-lomoda', JSON.stringify(data));
+
+
+const renderCart = () => {
+    cartListGoods.textContent = '';
+
+    const cartItems = getLocalStorage();
+
+    let totalPrice = 0;
+
+    cartItems.forEach((item, i) => {
+        const tr = document.createElement('tr');
+
+        tr.innerHTML = `
+                <td>${i + 1}</td>
+                <td>${item.brand} ${item.name}</td>
+                ${item.color ? `<td>${item.color}</td>` : '<td>-</td>'}
+                ${item.sizes ? `<td>${item.sizes}</td>` : '<td>-</td>'}
+                <td>${item.cost} &#8381;</td>
+                <td><button class="btn-delete" data-id="${item.id}" >&times;</button></td>
+        `;
+
+        totalPrice += item.cost;
+
+        cartListGoods.append(tr);
+
+    });
+
+    cartTotalCost.textContent = totalPrice + ' ₽';
+
+
+}
+
+const deleteItemCart = id => {
+    const cartItems = getLocalStorage();
+    const newCartItems = cartItems.filter(item => item.id !== id);
+    setLocalStorage(newCartItems);
+};
+
+cartListGoods.addEventListener('click', e => {
+    if (e.target.matches('.btn-delete')) {
+        deleteItemCart(e.target.dataset.id);
+        renderCart();
+    }
+});
+
 
 
 // blocking scroll
@@ -50,8 +107,7 @@ const enableScroll = () => {
 
 
 
-const subheaderCart = document.querySelector('.subheader__cart'),
-    cartOverlay = document.querySelector('.cart-overlay');
+
 
 const closeModal = () => {
     cartOverlay.classList.remove('cart-overlay-open');
@@ -60,6 +116,7 @@ const closeModal = () => {
 const openModal = () => {
     cartOverlay.classList.add('cart-overlay-open');
     disableScroll();
+    renderCart();
 }
 
 
@@ -110,6 +167,7 @@ cartOverlay.addEventListener('click', event => {
     }
 });
 
+// render shopCart
 
 
 // output goods on the page
@@ -207,9 +265,12 @@ try {
     html + `<li class="card-good__select-item"  data-id="${i}">${item}</li>`
     , '')
 
-    const renderCardGood = ([{ cost, brand, name, sizes, photo, color }]) => {
+    const renderCardGood = ([{ id, cost, brand, name, sizes, photo, color }]) => {
+
+        const data = { brand, name, cost, id };
+
         cardGoodImage.src = `goods-image/${photo}`;
-        cardGoodImage.alt= `${brand} ${name}`;
+        cardGoodImage.alt = `${brand} ${name}`;
 
         cardGoodBrand.textContent = `${brand}`;
         cardGoodTitle.textContent = `${name}`;
@@ -230,6 +291,30 @@ try {
             cardGoodSizes.style.display = 'none';
         }
 
+        if (getLocalStorage().some(item => item.id === id)) {
+            cardGoodBuy.classList.add('delete');
+            cardGoodBuy.textContent = 'Удалить из корзины';
+        }
+        
+        cardGoodBuy.addEventListener('click', () => {
+            if (cardGoodBuy.classList.contains('delete')) {
+                deleteItemCart(id);
+                cardGoodBuy.classList.remove('delete');
+                cardGoodBuy.textContent = 'Добавить в корзину';
+                return;
+            }
+            if (color) data.color = cardGoodColor.textContent;
+            if (sizes) data.sizes = cardGoodSizes.textContent;
+
+            cardGoodBuy.classList.add('delete');
+            cardGoodBuy.textContent = 'Удалить из корзины';
+
+
+            const cardData = getLocalStorage();
+            cardData.push(data);
+            setLocalStorage(cardData);
+
+        });
 
         cardGoodSelectWrapper.forEach(item => {
             item.addEventListener('click', e => {
@@ -255,6 +340,7 @@ try {
 
     }
     
+
     getGoods(renderCardGood, 'id', hash )
 
     
